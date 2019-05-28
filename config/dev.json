@@ -1,0 +1,6 @@
+{
+  "isDevelopment": false,
+  "server": {
+    "port": "8081"
+  }
+}
