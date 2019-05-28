@@ -11,5 +11,5 @@ func Api(app *iris.Application) {
 		blog = &controller.BlogController{}
 	)
 	api := app.Party("/es")
-	api.Get("/createIndex", blog.CreateIndex)
+	api.Post("/save", blog.Save)
 }

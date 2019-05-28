@@ -7,13 +7,13 @@ import (
 )
 
 /**
-iris版本10
+iris版本11
 */
 func SetupServer() {
 
 	port := viper.GetString("server.port")
 	host := viper.GetString("server.host")
-	app := iris.New()
+	app := iris.Default()
 	api.Api(app)
 	app.Run(iris.Addr(host + ":" + port))
 }

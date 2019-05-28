@@ -1,8 +1,10 @@
 package controller
 
 import (
+	"encoding/json"
 	"github.com/kataras/iris"
 	"go-es-demo/src/server/constant"
+	"go-es-demo/src/server/entity"
 	"go-es-demo/src/server/errcode"
 	"go-es-demo/src/server/service"
 )
@@ -10,18 +12,15 @@ import (
 type BlogController struct {
 }
 
-func (*BlogController) CreateIndex(ctx iris.Context) {
+func (*BlogController) Save(ctx iris.Context) {
+	var blog entity.Blog
 	blogService := service.BlogService{}
-	blogService.CreateIndex(constant.CHERRY_INDEX)
-	ctx.JSON(errcode.SUCCESS.Result())
-	return
-}
-
-//批量插入
-func (*BlogController) Batch(ctx iris.Context) {
-	blogService := service.BlogService{}
-	param := ctx.Params()
-	blogService.Batch(constant.CHERRY_INDEX, constant.CHERRY_INDEX_BLOG_TYPE, param)
+	err := ctx.ReadJSON(&blog)
+	if err != nil {
+		ctx.JSON(errcode.PARAM_ERROR.Result())
+	}
+	b, _ := json.Marshal(blog)
+	blogService.Save(constant.CHERRY_INDEX, constant.CHERRY_INDEX_BLOG_TYPE, string(b), blog.Id)
 	ctx.JSON(errcode.SUCCESS.Result())
 	return
 }

@@ -2,49 +2,43 @@ package service
 
 import (
 	"context"
-	"fmt"
+	"encoding/json"
+	"github.com/elastic/go-elasticsearch/v6/esapi"
 	"go-es-demo/src/server/common"
-	"gopkg.in/olivere/elastic.v6"
 	"log"
-	"strconv"
+	"strings"
 )
 
 type BlogService struct {
 }
 
-func (*BlogService) CreateIndex(index string) bool {
-	//查询索引是否存在
-	exists, err := common.EsClient.IndexExists(index).Do(context.Background())
-	if err != nil {
-		// Handle error
-		log.Printf("check index failed, err: %v\n", err)
+func (*BlogService) Save(index string, _type string, data string, id string) {
+	// Set up the request object.
+	req := esapi.IndexRequest{
+		Index:        index,
+		DocumentType: _type,
+		DocumentID:   id,
+		Body:         strings.NewReader(data),
+		Refresh:      "true",
 	}
-	//不存在就创建索引
-	if !exists {
-		// Index does not exist yet.
-		result, err := common.EsClient.CreateIndex(index).Do(context.Background())
-		if err != nil {
-			log.Printf("create index failed, err: %v\n", err)
+
+	// Perform the request with the client.
+	res, err := req.Do(context.Background(), common.Es)
+	if err != nil {
+		log.Fatalf("Error getting response: %s", err)
+	}
+	defer res.Body.Close()
+
+	if res.IsError() {
+		log.Printf("[%s] Error indexing document ID=%d", res.Status(), id)
+	} else {
+		// Deserialize the response into a map.
+		var r map[string]interface{}
+		if err := json.NewDecoder(res.Body).Decode(&r); err != nil {
+			log.Printf("Error parsing the response body: %s", err)
+		} else {
+			// Print the response status and indexed document version.
+			log.Printf("[%s] %s; version=%d", res.Status(), r["result"], int(r["_version"].(float64)))
 		}
-		return result.Acknowledged
 	}
-	return true
-}
-
-//批量插入
-func (*BlogService) Batch(index string, _type string, datas ...interface{}) {
-
-	bulkRequest := common.EsClient.Bulk()
-	for i, data := range datas {
-		doc := elastic.NewBulkIndexRequest().Index(index).Type(_type).Id(strconv.Itoa(i)).Doc(data)
-		bulkRequest = bulkRequest.Add(doc)
-	}
-
-	response, err := bulkRequest.Do(context.TODO())
-	if err != nil {
-		panic(err)
-	}
-	failed := response.Failed()
-	iter := len(failed)
-	fmt.Printf("error: %v, %v\n", response.Errors, iter)
 }
