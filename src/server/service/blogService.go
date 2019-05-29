@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"github.com/bitly/go-simplejson"
 	"github.com/elastic/go-elasticsearch/v6/esapi"
+	"github.com/elastic/go-elasticsearch/v6/esutil"
 	"github.com/go-errors/errors"
 	"github.com/ricardolonga/jsongo"
 	"go-es-demo/src/server/common"
@@ -23,12 +24,11 @@ func (*BlogService) Save(index string, _type string, datas []entity.Blog) error 
 		wg.Add(1)
 		go func(i int, data entity.Blog) {
 			defer wg.Done()
-			d, _ := json.Marshal(data)
 			req := esapi.IndexRequest{
 				Index:        index,
 				DocumentType: _type,
 				DocumentID:   data.Id,
-				Body:         strings.NewReader(string(d)),
+				Body:         esutil.NewJSONReader(data),
 				Refresh:      "true",
 			}
 
