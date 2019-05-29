@@ -12,4 +12,5 @@ func Api(app *iris.Application) {
 	)
 	api := app.Party("/es")
 	api.Post("/save", blog.Save)
+	api.Get("/search", blog.Search)
 }

@@ -22,3 +22,11 @@ func (*BlogController) Save(ctx iris.Context) {
 	ctx.JSON(errcode.SUCCESS.Result())
 	return
 }
+
+func (*BlogController) Search(ctx iris.Context) {
+	blogService := service.BlogService{}
+	query := ctx.URLParam("query")
+	blogService.Search(constant.CHERRY_INDEX, constant.CHERRY_INDEX_BLOG_TYPE, query)
+	ctx.JSON(errcode.SUCCESS.Result())
+	return
+}

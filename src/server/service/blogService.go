@@ -1,6 +1,7 @@
 package service
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"github.com/elastic/go-elasticsearch/v6/esapi"
@@ -54,5 +55,74 @@ func (*BlogService) Save(index string, _type string, datas []entity.Blog) {
 	}
 	wg.Wait()
 
-	log.Println(strings.Repeat("-", 37))
+	log.Println(strings.Repeat("-", 40))
+}
+
+func (*BlogService) Search(index string, _type string, searchStr string) {
+	var (
+		r      map[string]interface{}
+		buf    bytes.Buffer
+		matchs [2]map[string]interface{}
+	)
+	matchs[0] = map[string]interface{}{
+		"title": searchStr,
+	}
+	matchs[1] = map[string]interface{}{
+		"content": searchStr,
+	}
+	query := map[string]interface{}{
+		"query": map[string]interface{}{
+			"bool": map[string]interface{}{
+				"should": matchs,
+			},
+		},
+	}
+	if err := json.NewEncoder(&buf).Encode(query); err != nil {
+		log.Fatalf("Error encoding query: %s", err)
+	}
+
+	// Perform the search request.
+	res, err := common.ES.Search(
+		common.ES.Search.WithContext(context.Background()),
+		common.ES.Search.WithIndex(index),
+		//common.ES.Search.WithSearchType(_type),
+		common.ES.Search.WithBody(&buf),
+		common.ES.Search.WithTrackTotalHits(true),
+		common.ES.Search.WithPretty(),
+	)
+	if err != nil {
+		log.Fatalf("Error getting response: %s", err)
+	}
+	defer res.Body.Close()
+
+	if res.IsError() {
+		var e map[string]interface{}
+		if err := json.NewDecoder(res.Body).Decode(&e); err != nil {
+			log.Fatalf("Error parsing the response body: %s", err)
+		} else {
+			// Print the response status and error information.
+			log.Fatalf("[%s] %s: %s",
+				res.Status(),
+				e["error"].(map[string]interface{})["type"],
+				e["error"].(map[string]interface{})["reason"],
+			)
+		}
+	}
+
+	if err := json.NewDecoder(res.Body).Decode(&r); err != nil {
+		log.Fatalf("Error parsing the response body: %s", err)
+	}
+	// Print the response status, number of results, and request duration.
+	log.Printf(
+		"[%s] %d hits; took: %dms",
+		res.Status(),
+		int(r["hits"].(map[string]interface{})["total"].(float64)),
+		int(r["took"].(float64)),
+	)
+	// Print the ID and document source for each hit.
+	for _, hit := range r["hits"].(map[string]interface{})["hits"].([]interface{}) {
+		log.Printf(" * ID=%s, %s", hit.(map[string]interface{})["_id"], hit.(map[string]interface{})["_source"])
+	}
+
+	log.Println(strings.Repeat("=", 40))
 }
