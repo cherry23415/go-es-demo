@@ -26,7 +26,18 @@ func (*BlogController) Save(ctx iris.Context) {
 func (*BlogController) Search(ctx iris.Context) {
 	blogService := service.BlogService{}
 	query := ctx.URLParam("query")
-	blogService.Search(constant.CHERRY_INDEX, constant.CHERRY_INDEX_BLOG_TYPE, query)
-	ctx.JSON(errcode.SUCCESS.Result())
+	page, e1 := ctx.URLParamInt("page")
+	if e1 != nil {
+		ctx.JSON(errcode.PARAM_ERROR.Result())
+	}
+	size, e2 := ctx.URLParamInt("size")
+	if e2 != nil {
+		ctx.JSON(errcode.PARAM_ERROR.Result())
+	}
+	returnJson, err := blogService.Search(constant.CHERRY_INDEX, constant.CHERRY_INDEX_BLOG_TYPE, query, page, size)
+	if err != nil {
+		ctx.JSON(errcode.SYSTEM_ERROR.ResultWithMsg(err.Error()))
+	}
+	ctx.JSON(errcode.SUCCESS.ResultWithData(returnJson))
 	return
 }
