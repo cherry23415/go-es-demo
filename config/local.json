@@ -2,5 +2,8 @@
   "isDevelopment": true,
   "server": {
     "port": "8082"
+  },
+  "es": {
+    "addr": "http://127.0.0.1:9200"
   }
 }
