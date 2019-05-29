@@ -9,7 +9,7 @@ func main() {
 
 	initialize.SetupConfig()
 
-	common.SetEs()
+	common.SetEsClient()
 
 	initialize.SetErrorDeal()
 
